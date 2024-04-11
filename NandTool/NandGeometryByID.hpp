@@ -1,21 +1,21 @@
-#ifndef NANDID_HPP
-#define NANDID_HPP
+#ifndef NANDGEOMETRYBYID_HPP
+#define NANDGEOMETRYBYID_HPP
 
 #include <string>
 using namespace std;
 #include "FtdiNand.hpp"
+#include "NandGeometry.hpp"
 
-class NandID {
+class NandGeometryByID: public NandGeometry {
 public:
-	NandID(FtdiNand *fn, unsigned char *idbytes);
-	string getManufacturer();
-	string getDesc();
-	int getPageSize();
-	int getSizeMB();
-	int getOobSize();
-	bool isLargePage();
-	int getAddrByteCount();
-	unsigned char* NandID::getID();
+	NandGeometryByID(FtdiNand *fn, unsigned char *idbytes);
+	virtual string getDesc();
+	virtual long getPagesCount();
+	virtual int getSizeMB();
+	virtual int getPageSize();
+	virtual int getOobSize();
+	virtual bool isLargePage();
+	virtual int getAddrByteCount();
 private:
 	typedef struct {
 		const char *name;
@@ -28,9 +28,6 @@ private:
 	} DevCodes;
 
 	static const DevCodes m_devCodes[];
-	unsigned char m_idBytes[8];
-	
-	string m_nandManuf;
 	string m_nandDesc;
 	int m_nandPageSz;
 	int m_nandbw;

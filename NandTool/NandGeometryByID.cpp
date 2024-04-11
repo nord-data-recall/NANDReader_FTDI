@@ -17,22 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "NandID.hpp"
+#include "NandGeometryByID.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include "NandCmds.h"
-
-#define NAND_MFR_TOSHIBA	0x98
-#define NAND_MFR_SAMSUNG	0xec
-#define NAND_MFR_FUJITSU	0x04
-#define NAND_MFR_NATIONAL	0x8f
-#define NAND_MFR_RENESAS	0x07
-#define NAND_MFR_STMICRO	0x20
-#define NAND_MFR_HYNIX		0xad
-#define NAND_MFR_MICRON		0x2c
-#define NAND_MFR_AMD		0x01
-#define NAND_MFR_MACRONIX	0xc2
-#define NAND_MFR_EON		0x92
 
 #define LP_OPTIONS 1
 #define NAND_CI_CELLTYPE_MSK    0x0C
@@ -42,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //Copyright (C) 2002 Thomas Gleixner (tglx@linutronix.de)
 //Modified to get rid of the 16-bit devices: we don't support these.
 //Name. ID code, pagesize, chipsize in MegaByte, eraseblock size, options
-const NandID::DevCodes NandID::m_devCodes[]={
+const NandGeometryByID::DevCodes NandGeometryByID::m_devCodes[]={
 	{"NAND 1MiB 5V 8-bit",		0x6e, 256, 1, 0x1000, 0, 3},
 	{"NAND 2MiB 5V 8-bit",		0x64, 256, 2, 0x1000, 0, 3},
 	{"NAND 4MiB 5V 8-bit",		0x6b, 512, 4, 0x2000, 0, 3},
@@ -156,8 +144,8 @@ static int nand_id_len(unsigned char *id_data, int arrlen)
 	return arrlen;
 }
 
-//Constructor: construct NAND ID info from the 5 ID bytes read from the NAND.
-NandID::NandID(FtdiNand *fn, unsigned char *idBytes) {
+//Constructor: construct NandGeometry info from the 5 ID bytes read from the NAND.
+NandGeometryByID::NandGeometryByID(FtdiNand *fn, unsigned char *idBytes) : NandGeometry(idBytes) {
 	int x;
 	for (x=0; x<8; x++) m_idBytes[x]=idBytes[x];
 	
@@ -289,68 +277,32 @@ NandID::NandID(FtdiNand *fn, unsigned char *idBytes) {
 	}	
 	
 	m_nandaddrcyc = m_devCodes[x].addrcycles;
-
-	char buff[100];
-	sprintf(buff, "Unknown (%hhx)", idBytes[0]);
-	m_nandManuf=buff;
-	if (idBytes[0]==0x98) m_nandManuf="Toshiba";
-	if (idBytes[0]==0xec) m_nandManuf="Samsung";
-	if (idBytes[0]==0x04) m_nandManuf="Fujitsu";
-	if (idBytes[0]==0x8f) m_nandManuf="National Semiconductors";
-	if (idBytes[0]==0x07) m_nandManuf="Renesas";
-	if (idBytes[0]==0x20) m_nandManuf="ST Micro";
-	if (idBytes[0]==0xad) m_nandManuf="Hynix";
-	if (idBytes[0]==0x2c) m_nandManuf="Micron";
-	if (idBytes[0]==0x01) m_nandManuf="AMD";
-	if (idBytes[0]==0xc2) m_nandManuf="Macronix";
 }
 
-string NandID::getDesc() {
+string NandGeometryByID::getDesc() {
 	return m_nandDesc;
 }
 
-string NandID::getManufacturer() {
-	return m_nandManuf;
-}
-
-int NandID::getPageSize() {
+int NandGeometryByID::getPageSize() {
 	return m_nandPageSz;
 }
 
-int NandID::getOobSize() {
+int NandGeometryByID::getOobSize() {
 	return m_nandOobSz;
 }
 
-int NandID::getSizeMB() {
+long NandGeometryByID::getPagesCount() {
+	return (m_nandChipSzMB * 1024LL * 1024LL) / m_nandPageSz;
+}
+
+int NandGeometryByID::getSizeMB() {
 	return m_nandChipSzMB;
 }
 
-bool NandID::isLargePage() {
+bool NandGeometryByID::isLargePage() {
 	return m_nandIsLP;
 }
 
-unsigned char* NandID::getID() {
-	return m_idBytes;
-}
-
-//Get the amount of bytes the address needs to be sent as.
-int NandID::getAddrByteCount() {
+int NandGeometryByID::getAddrByteCount() {
 	return m_nandaddrcyc;
-	/*int cyc;
-	if (m_nandIsLP) {
-		if (m_nandChipSzMB>=32768) {
-			cyc=6;
-		} else if (m_nandChipSzMB>=128) {
-			cyc=5;
-		} else {
-			cyc=4;
-		}
-	} else {
-		if (m_nandChipSzMB>128) { //>=64 ???
-			cyc=3; 
-		} else {
-			cyc=4;
-		}
-	}
-	return cyc;*/
 }
