@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "NandDataSP.hpp"
 #include "NandCmds.h"
+#include "Debug.hpp"
 
 //Data handler for a small-page flash.
 
@@ -41,15 +42,19 @@ int NandDataSP::readPage(int pageno, char *buff, int max) {
 	m_ft->sendAddr(pageno<<8L, m_id->getAddrByteCount());
 	m_ft->waitReady();
 	n+=m_ft->readData(buff+256, max>256?256:max);
+	DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_NAND_MAIN_DATA_SHORT, DEBUG_NAND_MAIN_DATA_FULL, "NAND page data", buff, n);
 	return n;
 }
 
 int NandDataSP::readOob(int pageno, char *buff, int max) {
+	int bytes_read;
 	//Read the OOB for a page
 	m_ft->sendCmd(NAND_CMD_READOOB);
 	m_ft->sendAddr(pageno<<8L, m_id->getAddrByteCount());
 	m_ft->waitReady();
-	return m_ft->readData(buff, max);
+	bytes_read = m_ft->readData(buff, max);
+	DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_NAND_OOB_DATA_SHORT, DEBUG_NAND_OOB_DATA_FULL, "NAND page OOB data", buff, bytes_read);
+	return bytes_read;
 }
 
 int NandDataSP::writePage(int pageno, char *buff, int len) {

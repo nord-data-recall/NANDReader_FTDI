@@ -17,6 +17,7 @@
 #include "onfi.h"
 #include "NandOnfi.hpp"
 #include "NandGeometryFromUser.hpp"
+#include "Debug.hpp"
 
 #define ALL_TESTS	-1
 #define PROGRESS_MESSAGE_SIZE	100
@@ -80,8 +81,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	float throughput_ratio;
 	DWORD throughput_time_start;
 	float throughput_bytes;
-
-	printf("FT2232H-based NAND reader\n");
 	//Parse command line options
 	Action action=actionNone;
 	NandChip::AccessType access=NandChip::accessBoth;
@@ -128,6 +127,16 @@ int _tmain(int argc, _TCHAR* argv[])
 			}
 		} else if (strcmp(argv[x], "-g") == 0 && x <= (argc - 2)) {
 			geometry_param = argv[++x];
+#ifdef DEBUG_PARAMETER_INTERNAL
+		} else if (strcmp(argv[x], "-debug") == 0 && x <= (argc - 2)) {
+			x++; //consume argument
+			if (strcmp(argv[x], "info") == 0)
+			{
+				Debug::printParameterInfo();
+				exit(0); //exit program
+			}
+			Debug::setDebug(argv[x]);
+#endif
 		} else if (strcmp(argv[x],"-u")==0 && x<=(argc-2)) {
 			action=actionVerify;
 			char *endp;
@@ -162,7 +171,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	if (action==actionNone || err || argc==1) {
-		printf("Usage: [-i|-r file|-v file|-d|-d test_no|-show_onfi file] [-t main|oob|both|onfi] [-s] [-f ftdi_id]\n");
+		printf("Usage: [-i|-r file|-v file|-d|-d test_no|-show_onfi file] [-t main|oob|both|onfi] [-s] [-f ftdi_id]" DEBUG_PARAM_STR "\n");
 		printf("  -i      - Identify chip\n");
 		printf("  -r file - Read chip to file\n");
 //		printf("  -w file - Write chip from file\n");
@@ -178,9 +187,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		printf("  -c size - size of data chunks processed at one time (default 0 = infinity)\n");
 		printf("  -show_onfi file - print ONFI section from file\n");
 		printf("  -g %s - define or override chip geometry\n", NandGeometryFromUser::getTextTemplate());
+		Debug::printParameterTemplate();
 		exit(0);
 	}
 
+	printf("FT2232H-based NAND reader\n");
 	if (actionDiagnostics == action)
 	{
 		FtdiDiag diag(dev_id);
@@ -277,6 +288,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		throughput_ratio = 0.0;//questionable if it should 0 or INF when ratio is not known
 		progress_message_refresh_needed = 1; //to make sure it is printed for first time
 		for (long page_number=startPage; page_number <= lastPage; page_number++) {
+			DEBUG_PRINT_INT(DEBUG_APP_PAGE_NUMBER, "NAND page number", page_number);
 			if (0 != progress_message_refresh_needed)
 			{
 				progress_message_len = printProgressIndicator(page_number - startPage, lastPage - startPage + 1, page_number, throughput_ratio);

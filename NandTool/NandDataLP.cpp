@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "NandDataLP.hpp"
 #include "NandCmds.h"
+#include "Debug.hpp"
 
 //Data interface for large-page NAND chips
 
@@ -31,6 +32,7 @@ NandDataLP::NandDataLP(FtdiNand *ftdi, NandGeometry *id) :
 int NandDataLP::readPage(int pageno, char *buff, int max) {
 	//Read a page
 	char status=0;
+	int bytes_read;
 	m_ft->sendCmd(NAND_CMD_READ0);
 	m_ft->sendAddr(pageno<<16L, m_id->getAddrByteCount());
 	m_ft->sendCmd(NAND_CMD_READSTART);
@@ -41,19 +43,26 @@ int NandDataLP::readPage(int pageno, char *buff, int max) {
 		int r1=m_ft->readData(buff, 0x1000);
 		if (r1<0) return r1;
 		max-=0x1000;
-		return r1+m_ft->readData(buff+0x1000, max);
+		bytes_read = r1+m_ft->readData(buff+0x1000, max);
+		DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_NAND_MAIN_DATA_SHORT, DEBUG_NAND_MAIN_DATA_FULL, "NAND page data", buff, bytes_read);
+		return bytes_read;
 	}
-	return m_ft->readData(buff, max);
+	bytes_read = m_ft->readData(buff, max);
+	DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_NAND_MAIN_DATA_SHORT, DEBUG_NAND_MAIN_DATA_FULL, "NAND page data", buff, bytes_read);
+	return bytes_read;
 }
 
 int NandDataLP::readOob(int pageno, char *buff, int max) {
+	int bytes_read;
 	//Read the OOB for a page
 	m_ft->sendCmd(NAND_CMD_READ0);
 	m_ft->sendAddr((pageno<<16L)+m_id->getPageSize(), m_id->getAddrByteCount());
 	m_ft->sendCmd(NAND_CMD_READSTART);
 	m_ft->waitReady();
 	if (max>m_id->getOobSize()) max=m_id->getOobSize();
-	return m_ft->readData(buff, max);
+	bytes_read = m_ft->readData(buff, max);
+	DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_NAND_OOB_DATA_SHORT, DEBUG_NAND_OOB_DATA_FULL, "NAND page OOB data", buff, bytes_read);
+	return bytes_read;
 }
 
 int NandDataLP::writePage(int pageno, char *buff, int len) {

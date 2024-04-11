@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef WIN32
 #include <windows.h>
 #endif
+#include "Debug.hpp"
 
 #define DIS_DIV_5       0x8a
 #define EN_DIV_5        0x8b 
@@ -195,6 +196,7 @@ int FtdiNand::sendAddr(long long addr, int noBytes) {
 		buff[x]=addr&0xff;
 		addr=addr>>8;
 	}
+	DEBUG_PRINT_RAW_SHORT_DATA(DEBUG_NAND_ADDRESSING, "NAND addressing data", (char*) buff, noBytes);
 	return nandWrite(0, 1, (char*) buff, noBytes);
 }
 
@@ -235,6 +237,8 @@ void FtdiNand::ftdiSendReadCommands(int cl, int al, int count) {
 	}
 	cmd_buffer[buf_ptr++] = SEND_IMMEDIATE;
 
+	DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_ALL_OFF, DEBUG_FTDI_DATA_WRITE, "FTDI data to be written", (char*)cmd_buffer, buf_ptr);
+
 	result = FT_Write(m_ftdi, cmd_buffer, buf_ptr, &written); //use buf_ptr as number of bytes
 	if (FT_OK != result)
 		error("FT_Write failed");
@@ -247,6 +251,7 @@ void FtdiNand::ftdiReadBytes(unsigned char *buffer, int lenght) {
 	DWORD read;
 	FT_STATUS result;
 	result = FT_Read(m_ftdi, buffer, lenght, &read);
+	DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_ALL_OFF, DEBUG_FTDI_DATA_READ, "FTDI data read", (char*)buffer, lenght);
 	if (FT_OK != result)
 		error("FT_Read failed");
 	if (lenght != read)
@@ -268,10 +273,12 @@ int FtdiNand::waitReady() {
 	if (m_rbErrorCount==-1) return 1; //Too many timeouts -> don't check R/B-pin
 
 	for (x=0; x<TIMEOUT_MSEC; x++) {
+		DEBUG_PRINT_RAW_SHORT_DATA(DEBUG_FTDI_DATA_WRITE, "FTDI data to be written", (char*)&cmd, 1);
 		//Send the command to read the IO-lines
 		if (FT_Write(m_ftdi, &cmd, 1,&written)!=FT_OK) return error("writing cmd");
 		//Read response
-		if (FT_Read(m_ftdi, &resp, 1,&read)!=FT_OK) return error("writing cmd");
+		if (FT_Read(m_ftdi, &resp, 1,&read)!=FT_OK) return error("read cmd");
+		DEBUG_PRINT_RAW_SHORT_DATA(DEBUG_FTDI_DATA_READ, "FTDI data to be written", (char*)&resp,1);
 		//Return if R/B-line is high (=ready)
 		if (resp&2) return 1;
 	#ifdef WIN32

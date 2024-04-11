@@ -3,6 +3,7 @@
 #include "NandOnfi.hpp"
 #include "NandCmds.h"
 #include "onfi.h"
+#include "Debug.hpp"
 
 NandOnfi::NandOnfi(FtdiNand *fn)
 {
@@ -19,6 +20,7 @@ NandOnfi::NandOnfi(FtdiNand *fn)
 	fn->sendAddr(0, 1);
 	fn->waitReady();
 	fn->readData((char*)&m_onfiData, sizeof(m_onfiData));
+	DEBUG_PRINT_RAW_SHORTLONG_DATA(DEBUG_NAND_ONFI_DATA_FULL, DEBUG_NAND_ONFI_DATA_FULL, "NAND ONFI data raw", (char*) &m_onfiData, sizeof(m_onfiData));
 	if (ONFI_SIGNATURE != m_onfiData.rev.magic)
 		m_hasOnfi = false; //onfi info included in ReadID, but Onfi read failed
 }
